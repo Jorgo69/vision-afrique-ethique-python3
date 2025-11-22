@@ -1,0 +1,9 @@
+# Secrets - NE JAMAIS COMMITER LES SECRETS !
+.env
+
+# Fichiers de cache et temporaires de Python
+__pycache__/
+*.pyc
+
+# Dossier de l'environnement virtuel
+venv/

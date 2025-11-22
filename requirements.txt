@@ -1,0 +1,14 @@
+# FastAPI : Le framework Python minimaliste et performant pour créer l'API
+fastapi==0.104.1
+# Uvicorn : Le serveur ASGI qui fait tourner l'application FastAPI
+uvicorn==0.23.2
+# InsightFace : La librairie de reconnaissance faciale qui fournit les modèles ML
+insightface==0.7.3
+# opencv-python : La librairie essentielle pour le traitement d'images (utilisée par InsightFace)
+opencv-python==4.8.1.78
+# python-multipart : Permet à FastAPI de gérer les formulaires de fichiers (upload d'images)
+python-multipart==0.0.6
+# python-dotenv : Pour charger les variables d'environnement (secrets) depuis le fichier .env
+python-dotenv==1.0.0
+# numpy : Librairie fondamentale pour la manipulation des vecteurs et matrices (embeddings)
+numpy==1.26.1
