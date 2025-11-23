@@ -1,0 +1,31 @@
+### Tester l'endpoint /extract avec une image
+POST http://localhost:8000/extract
+Content-Type: multipart/form-data; boundary=boundary_for_fastapi_file_upload
+
+--boundary_for_fastapi_file_upload
+Content-Disposition: form-data; name="image"; filename="photo_de_test.jpg"
+Content-Type: image/jpeg
+
+< ./images/image1.jpg
+
+--boundary_for_fastapi_file_upload--
+
+
+### Tester l'endpoint /extract avec une image
+# L'URL doit correspondre à votre serveur Uvicorn
+POST http://127.0.0.1:8000/extract 
+Content-Type: multipart/form-data; boundary=MonSeparateurUnique
+
+--MonSeparateurUnique
+Content-Disposition: form-data; name="image"; filename="image1.jpg"
+Content-Type: image/jpeg
+
+# -----------------------------------------------------------
+# C'EST LA LIGNE CRUCIALE : Elle doit commencer par "<"
+# Le chemin est relatif au fichier .http ou absolu.
+# -----------------------------------------------------------
+< ./client/images/image4.jpg 
+# OU, si vous êtes à la racine du projet et que l'image est à cet endroit :
+# < images/image1.jpg 
+
+--MonSeparateurUnique--

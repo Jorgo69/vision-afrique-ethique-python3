@@ -12,3 +12,6 @@ python-multipart==0.0.6
 python-dotenv==1.0.0
 # numpy : Librairie fondamentale pour la manipulation des vecteurs et matrices (embeddings)
 numpy==1.26.1
+# insightface nécessite une autre librairie fondamentale, onnxruntime
+# onnxruntime : Moteur d'exécution (runtime) essentiel pour les modèles ONNX utilisés par InsightFace
+onnxruntime
