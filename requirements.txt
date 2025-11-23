@@ -15,3 +15,5 @@ numpy==1.26.1
 # insightface nécessite une autre librairie fondamentale, onnxruntime
 # onnxruntime : Moteur d'exécution (runtime) essentiel pour les modèles ONNX utilisés par InsightFace
 onnxruntime
+# pour le MVC
+pydantic-settings==2.0.3 # (ou la version installée)

@@ -141,3 +141,10 @@ Bash
     pip install -r requirements.txt
 
 Cette fois, l'installation de InsightFace devrait réussir car le compilateur trouvera le fichier Python.h dans les chemins que python3.12-dev a installés.
+
+
+Comme nous utilisons la gestion moderne des configurations de Pydantic, assurez-vous que pydantic-settings est bien installé.
+Bash
+
+# Ajout de la dépendance si elle manque
+pip install pydantic-settings

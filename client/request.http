@@ -1,5 +1,5 @@
 ### Tester l'endpoint /extract avec une image
-POST http://localhost:8000/extract
+POST http://localhost:8000/face/extract
 Content-Type: multipart/form-data; boundary=boundary_for_fastapi_file_upload
 
 --boundary_for_fastapi_file_upload
@@ -13,7 +13,7 @@ Content-Type: image/jpeg
 
 ### Tester l'endpoint /extract avec une image
 # L'URL doit correspondre à votre serveur Uvicorn
-POST http://127.0.0.1:8000/extract 
+POST http://127.0.0.1:8000/face/extract 
 Content-Type: multipart/form-data; boundary=MonSeparateurUnique
 
 --MonSeparateurUnique
