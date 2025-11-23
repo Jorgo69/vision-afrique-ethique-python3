@@ -5,6 +5,7 @@ estructuration de l'Architecture (Méthode Modulaire FastAPI)
 Pour adopter une structure inspirée des frameworks MVC/Modulaires, nous allons utiliser les concepts clés de FastAPI : APIRouter et la gestion des dépendances/services.
 
     vision-afrique-ethique/
+```
 ├── api/
 │   └── endpoints/
 │       └── face.py         # ⬅️ Nouveau : Le "Controller" (Routes et logique de réception HTTP)
@@ -19,3 +20,4 @@ Pour adopter une structure inspirée des frameworks MVC/Modulaires, nous allons 
 ├── .env
 ├── .gitignore
 └── README.md
+```
