@@ -21,3 +21,10 @@ Pour adopter une structure inspirée des frameworks MVC/Modulaires, nous allons 
 ├── .gitignore
 └── README.md
 ```
+
+{
+  "status": "success",
+  "age": 24,
+  "gender": "M",
+  "token": "$argon2id$v=19$m=65536,t=2,p=4$dW5lX2F1dHJlX2NoYWluZV9kaWZmZXJlbnRfZXRfZWdhbGVtZW50X3RyZXNfbG9uZ3VlX21pbmltdW1fMzJfZXRfcGx1cw$C/1Q+2YtvhYkFVTDlLR8aGxVxwAe7toQh4SdWSnnkB8"
+}

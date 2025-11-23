@@ -4,14 +4,19 @@ import cv2
 import insightface
 from typing import List, Optional
 from core.config import settings # <-- Importez les paramètres ici
+from core.logger import setup_logger
 
 # Variable globale pour l'instance du modèle (le modèle n'a pas besoin d'être régénéré à chaque requête)
 INSIGHTFACE_MODEL = None 
 
 # Constantes pour la configuration du modèle InsightFace
-MODEL_NAME = 'buffalo_l' # Modèle léger et performant
+# MODEL_NAME = 'buffalo_l' # Modèle léger et performant
 ALLOWED_MODULES = ['detection', 'genderage', 'recognition']
-CONTEXT_ID = -1 # -1 force l'utilisation du CPU
+# CONTEXT_ID = -1 # -1 force l'utilisation du CPU
+
+# Remplacez les constantes par :
+MODEL_NAME = settings.MODEL_NAME
+CONTEXT_ID = settings.MODEL_CONTEXT_ID
 
 def load_insightface_model() -> None:
     """
@@ -60,6 +65,10 @@ def extract_features_from_image(image_bytes: bytes) -> Optional[dict]:
     
     # Décodage OpenCV : convertit le format image (JPEG/PNG) en matrice de pixels
     img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+    
+    # ✅ AJOUTEZ CETTE VÉRIFICATION
+    if img is None:
+        raise ValueError("Image corrompue ou format non supporté. Vérifiez que le fichier est une image valide (JPEG, PNG).")
 
     # 2. Détection, alignement, et extraction des features
     # INSIGHTFACE_MODEL.get() : C'est le cœur du traitement.
@@ -77,6 +86,27 @@ def extract_features_from_image(image_bytes: bytes) -> Optional[dict]:
     # WARNING: face.embedding est la donnée biométrique brute.
     return {
         "age": int(face.age), # Âge estimé, converti en int standard
-        "gender": 'F' if face.gender == 1 else 'M', # Genre estimé (1=F, 0=M)
+        "gender": 'M' if face.gender == 1 else 'F', # Genre estimé (1=F, 0=M)  #  1=Homme, 0=Femme
         "embedding": face.embedding.tolist() # Vecteur de 512 caractéristiques
     }
+
+logger = setup_logger(__name__)
+
+def load_insightface_model() -> None:
+    global INSIGHTFACE_MODEL
+    
+    if INSIGHTFACE_MODEL is not None:
+        return
+        
+    logger.info("⏳ Démarrage : Chargement du modèle InsightFace...")
+    try:
+        INSIGHTFACE_MODEL = insightface.app.FaceAnalysis(
+            name=MODEL_NAME, 
+            allowed_modules=ALLOWED_MODULES
+        )
+        INSIGHTFACE_MODEL.prepare(ctx_id=CONTEXT_ID, det_size=(640, 640))
+        logger.info("✅ Modèle InsightFace chargé avec succès.")
+    
+    except Exception as e:
+        logger.error(f"❌ Erreur critique : {e}")
+        raise RuntimeError("Échec du chargement du modèle InsightFace.")

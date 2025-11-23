@@ -1,0 +1,39 @@
+@host = http://localhost:8000
+@image_path = ../images/image1.jpg 
+
+### [PHASE 2] Générer un Token (Référence)
+
+# NOTE : Exécutez cette requête, puis copiez la valeur du token dans la réponse.
+
+POST {{host}}/face/tokenize
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="image"; filename="image1.jpg"
+
+< {{image_path}}
+
+--boundary--
+
+### [PHASE 3A] Match Réussi (Image A vs Token A - TEST MANUEL)
+
+# ATTENTION : Remplacez VOTRE_TOKEN_COLLÉ_ICI par la chaîne $argon2id$... copiée ci-dessus.
+
+POST {{host}}/face/match
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="image"; filename="image1.jpg"
+
+< {{image_path}}
+
+--boundary
+Content-Disposition: form-data; name="token_reference"
+
+$argon2id$v=19$m=65536,t=2,p=4$dW5lX2F1dHJlX2NoYWluZQ$+Ag6nAszhHAb9GObNNHmtayySFARMFvOx7vaOOabulY
+
+
+--boundary--
+
+# Réponse attendue : {"status": "success", "match_found": true, ...}
+# $argon2id$v=19$m=65536,t=2,p=4$dW5lX2F1dHJlX2NoYWluZQ$+Ag6nAszhHAb9GObNNHmtayySFARMFvOx7vaOOabulY

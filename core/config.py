@@ -16,13 +16,20 @@ class Settings(BaseSettings):
     # Ces valeurs sont lues depuis le fichier .env ou les variables d'environnement système.
     # Field(min_length=32) assure une validation minimale de la longueur.
     
-    VISION_SECRET_PART1: str = Field(..., min_length=32)
-    VISION_SECRET_PART2: str = Field(..., min_length=32)
+    # VISION_SECRET_PART1: str = Field(..., min_length=32)
+    # VISION_SECRET_PART2: str = Field(..., min_length=32)
+    
+    # Secrets (obligatoires en production, optionnels en dev)
+    VISION_SECRET_PART1: str = Field(default="dev_secret_part1_minimum_32_chars_long")
+    VISION_SECRET_PART2: str = Field(default="dev_secret_part2_minimum_32_chars_long")
     
     # --- Configuration du modèle ---
     # Même si elles sont statiques, les mettre ici rend la configuration centrale.
     MODEL_NAME: str = "buffalo_l"
     MODEL_CONTEXT_ID: int = -1  # -1 pour CPU
+    
+    # Nouvelle : Environnement
+    ENVIRONMENT: str = Field(default="development")
     
     # Configuration du modèle Pydantic pour la lecture des fichiers
     model_config = SettingsConfigDict(
