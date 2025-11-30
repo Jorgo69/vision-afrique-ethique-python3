@@ -18,4 +18,4 @@ onnxruntime
 # pour le MVC
 pydantic-settings==2.0.3 # (ou la version installée)
 # Installation de la librairie Argon2
-pip install argon2-cffi
+# pip install argon2-cffi

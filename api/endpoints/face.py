@@ -1,193 +1,331 @@
-# Import des classes FastAPI pour définir les routes
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form # <-- Import de Form
+"""
+Endpoints de l'API de reconnaissance faciale.
+Gestion d'erreurs améliorée avec codes standardisés.
+"""
 
-# Import de la fonction métier et du schéma de réponse
-from services.face_extractor import extract_features_from_image, load_insightface_model
-from core.models import FaceExtractionResponse, TokenizeResponse
-from core.config import settings # Sera utilisé pour la config/sécurité dans les phases futures
-from security import hash_embedding # <-- Importation du service de sécurité
-from security import verify_token # <-- Import de la fonction de vérification
-from core.models import MatchResponse
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from services.face_extractor import extract_features_from_image
+from core.models import FaceExtractionResponse, TokenizeResponse, MatchResponse
+from core.errors import ErrorCode, get_error_response
+from security import hash_embedding, verify_token
 
+# Limites de sécurité
+MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
+ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
 
-# Création du routeur. C'est l'équivalent de "routes/api.php" dans Laravel.
+# Création du routeur
 router = APIRouter(
-    prefix="/face",         # Toutes les routes de ce fichier commenceront par /face
-    tags=["Extraction"],    # Catégorie pour la documentation Swagger
+    prefix="/face",
+    tags=["Extraction"],
 )
 
-# --- ROUTE : /extract ---
 
-@router.post(
-    "/extract", 
-    response_model=FaceExtractionResponse, # Utilisation du schéma Pydantic pour la réponse
-    status_code=200,
-    summary="Extrait les features biométriques (embedding, âge, genre) d'un visage."
-)
-async def extract_features(
-    image: UploadFile = File(..., description="Le fichier image (JPEG ou PNG) à analyser.")
-):
+# ============================================
+# FONCTION UTILITAIRE : Validation d'Image
+# ============================================
+
+async def validate_image(image: UploadFile) -> bytes:
     """
-    Endpoint pour extraire les features d'un visage.
-    Lit l'image, la passe au service, et renvoie l'âge, le genre, et l'embedding biométrique.
-    """
+    Valide une image uploadée.
     
-    # 1. Lecture asynchrone des données de l'image
+    Returns:
+        bytes: Les bytes de l'image si valide
+    
+    Raises:
+        HTTPException: Si l'image est invalide
+    """
+    # Validation 1 : Type de contenu
+    if image.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=get_error_response(ErrorCode.INVALID_IMAGE_FORMAT)
+        )
+    
+    # Validation 2 : Taille
     image_bytes = await image.read()
     
+    if len(image_bytes) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail=get_error_response(ErrorCode.IMAGE_CORRUPTED)
+        )
+    
+    if len(image_bytes) > MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=get_error_response(ErrorCode.IMAGE_TOO_LARGE)
+        )
+    
+    return image_bytes
+
+
+# ============================================
+# ROUTE 1 : /extract
+# ============================================
+
+@router.post(
+    "/extract",
+    response_model=FaceExtractionResponse,
+    status_code=200,
+    summary="Extrait les features biométriques d'un visage"
+)
+async def extract_features(
+    image: UploadFile = File(..., description="Image JPEG, PNG ou WebP (max 10MB)")
+):
+    """
+    Extrait l'âge, le genre et l'embedding biométrique d'un visage.
+    
+    **Codes d'erreur possibles :**
+    - `NO_FACE_DETECTED` : Aucun visage dans l'image
+    - `IMAGE_TOO_LARGE` : Image > 10MB
+    - `IMAGE_CORRUPTED` : Image illisible
+    - `INVALID_IMAGE_FORMAT` : Format non supporté
+    - `IMAGE_TOO_SMALL` : Dimensions < 200x200
+    - `MODEL_NOT_LOADED` : Modèle non initialisé
+    """
+    
+    # Validation de l'image
+    image_bytes = await validate_image(image)
+    
     try:
-        # 2. Appel du SERVICE (Séparation des préoccupations!)
-        # Le Controller ne fait que de la plomberie HTTP et appelle la logique métier pure.
+        # Appel du service d'extraction
         features = extract_features_from_image(image_bytes)
-
+    
     except RuntimeError as e:
-        # Erreur si le modèle n'a pas été chargé (ex: dépendance manquante)
-        # 500 Internal Server Error: Problème côté serveur
+        # Erreur de modèle non chargé
         raise HTTPException(
-            status_code=500, detail=f"Erreur du service d'extraction: {e}"
+            status_code=500,
+            detail=get_error_response(ErrorCode.MODEL_NOT_LOADED)
         )
-    except Exception:
-        # Autres erreurs de traitement
+    
+    except ValueError as e:
+        # Erreurs de validation d'image
+        error_msg = str(e)
+        
+        if "IMAGE_CORRUPTED" in error_msg:
+            raise HTTPException(
+                status_code=400,
+                detail=get_error_response(ErrorCode.IMAGE_CORRUPTED)
+            )
+        elif "IMAGE_TOO_SMALL" in error_msg:
+            raise HTTPException(
+                status_code=400,
+                detail=get_error_response(ErrorCode.IMAGE_TOO_SMALL)
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=get_error_response(ErrorCode.EXTRACTION_FAILED)
+            )
+    
+    except Exception as e:
+        # Erreur inattendue
         raise HTTPException(
-            status_code=500, detail="Une erreur inattendue est survenue pendant l'extraction."
+            status_code=500,
+            detail=get_error_response(ErrorCode.EXTRACTION_FAILED)
         )
-
-    # 3. Gestion du résultat
+    
+    # Gestion du cas "aucun visage détecté"
     if features is None:
-        # 400 Bad Request: L'image fournie n'a pas permis la détection
         raise HTTPException(
-            status_code=400, detail="Aucun visage détecté ou image illisible."
+            status_code=400,
+            detail=get_error_response(ErrorCode.NO_FACE_DETECTED)
         )
-
-    # 4. Retourne les features. Pydantic s'assure que le format est respecté.
+    
+    # Retourne les features
     return FaceExtractionResponse(
         age=features["age"],
         gender=features["gender"],
         embedding=features["embedding"]
     )
-    
-# --- NOUVELLE ROUTE : /tokenize ---
+
+
+# ============================================
+# ROUTE 2 : /tokenize
+# ============================================
 
 @router.post(
-    "/tokenize", 
-    response_model=TokenizeResponse, 
+    "/tokenize",
+    response_model=TokenizeResponse,
     status_code=200,
-    summary="Extrait les features et génère un token cryptographique irréversible."
+    summary="Génère un token cryptographique sécurisé"
 )
 async def tokenize_face(
-    image: UploadFile = File(..., description="Le fichier image du visage à sécuriser.")
+    image: UploadFile = File(..., description="Image JPEG, PNG ou WebP (max 10MB)")
 ):
     """
-    Endpoint de la Phase 2. 
-    1. Extrait l'embedding brut.
-    2. Hache l'embedding en utilisant le double hashage salé (Argon2) avec les secrets.
-    3. Ne retourne que le token et les métadonnées (Age, Genre).
+    Extrait les features et génère un token Argon2 irréversible.
+    
+    **Le token peut être stocké en base de données de manière sécurisée.**
+    L'embedding biométrique brut n'est JAMAIS retourné.
+    
+    **Codes d'erreur possibles :**
+    - Mêmes codes que `/extract`
+    - `HASHING_FAILED` : Échec de la génération du token
     """
     
-    # 1. Lecture asynchrone des données de l'image
-    image_bytes = await image.read()
+    # Validation de l'image
+    image_bytes = await validate_image(image)
     
     try:
-        # 2. Appel du SERVICE d'extraction
+        # Extraction des features
         features = extract_features_from_image(image_bytes)
-
-    except RuntimeError as e:
+    
+    except RuntimeError:
         raise HTTPException(
-            status_code=500, detail=f"Erreur du service d'extraction: {e}"
+            status_code=500,
+            detail=get_error_response(ErrorCode.MODEL_NOT_LOADED)
         )
+    
+    except ValueError as e:
+        error_msg = str(e)
+        
+        if "IMAGE_CORRUPTED" in error_msg:
+            raise HTTPException(
+                status_code=400,
+                detail=get_error_response(ErrorCode.IMAGE_CORRUPTED)
+            )
+        elif "IMAGE_TOO_SMALL" in error_msg:
+            raise HTTPException(
+                status_code=400,
+                detail=get_error_response(ErrorCode.IMAGE_TOO_SMALL)
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=get_error_response(ErrorCode.EXTRACTION_FAILED)
+            )
+    
     except Exception:
         raise HTTPException(
-            status_code=500, detail="Une erreur inattendue est survenue pendant l'extraction."
+            status_code=500,
+            detail=get_error_response(ErrorCode.EXTRACTION_FAILED)
         )
-
-    # 3. Gestion de l'échec de détection
+    
+    # Aucun visage détecté
     if features is None:
         raise HTTPException(
-            status_code=400, detail="Aucun visage détecté ou image illisible."
+            status_code=400,
+            detail=get_error_response(ErrorCode.NO_FACE_DETECTED)
         )
-
-    # 4. Phase Critique : Hachage de l'Embedding
-    # L'embedding brut est ici traité, mais NE DOIT JAMAIS être stocké ou loggué !
+    
+    # Hachage de l'embedding
     embedding_brut = features["embedding"]
     
     try:
-        # Appel du SERVICE DE SÉCURITÉ (Hashage irréversible)
         security_token = hash_embedding(embedding_brut)
-        
-    except RuntimeError as e:
-        # Erreur si le hachage échoue (ex: secret manquant)
+    
+    except RuntimeError:
         raise HTTPException(
-            status_code=500, detail=f"Échec de la création du token sécurisé: {e}"
+            status_code=500,
+            detail=get_error_response(ErrorCode.HASHING_FAILED)
         )
-
-    # 5. Retourne le token et les métadonnées (SANS l'embedding brut)
+    
+    # Retourne le token et les métadonnées (SANS l'embedding)
     return TokenizeResponse(
         age=features["age"],
         gender=features["gender"],
         token=security_token
     )
-    
-# --- Fin du fichier : l'endpoint /extract existe toujours en dessous ---
 
-# --- NOUVELLE ROUTE : /match ---
+
+# ============================================
+# ROUTE 3 : /match
+# ============================================
 
 @router.post(
-    "/match", 
-    response_model=MatchResponse, 
+    "/match",
+    response_model=MatchResponse,
     status_code=200,
-    summary="Vérifie si le visage dans l'image correspond au token de référence fourni."
+    summary="Vérifie la correspondance visage-token"
 )
 async def match_face_token(
-    # Fichier image soumis par le client
-    image: UploadFile = File(..., description="Le fichier image du visage à vérifier."),
-    # Token de référence (doit être envoyé comme champ de formulaire "token_reference")
-    token_reference: str = Form(..., description="Le token Argon2 ($argon2id$...) de référence.")
+    image: UploadFile = File(..., description="Image à vérifier"),
+    token_reference: str = Form(..., description="Token Argon2 de référence")
 ):
     """
-    Endpoint de vérification.
-    1. Extrait l'embedding brut de l'image.
-    2. Utilise cet embedding brut et le token de référence pour vérifier la correspondance.
-    3. Ne renvoie JAMAIS les embeddings ou les tokens bruts.
+    Vérifie si le visage dans l'image correspond au token de référence.
+    
+    **Cas d'usage :**
+    - Authentification biométrique
+    - Vérification d'identité
+    - Contrôle d'accès
+    
+    **Codes d'erreur possibles :**
+    - Mêmes codes que `/tokenize`
+    - `INVALID_TOKEN_FORMAT` : Token mal formé
+    - `TOKEN_VERIFICATION_FAILED` : Token valide mais pas de correspondance
     """
     
-    # 1. Lecture des données
-    image_bytes = await image.read()
+    # Validation du token
+    if not token_reference.startswith("$argon2id$"):
+        raise HTTPException(
+            status_code=400,
+            detail=get_error_response(ErrorCode.INVALID_TOKEN_FORMAT)
+        )
+    
+    # Validation de l'image
+    image_bytes = await validate_image(image)
     
     try:
-        # 2. Extraction du nouvel embedding (Étape 1 du process)
+        # Extraction des features
         features = extract_features_from_image(image_bytes)
-
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=f"Erreur du service d'extraction: {e}")
-
-    # 3. Vérification de l'échec de détection
+    
+    except RuntimeError:
+        raise HTTPException(
+            status_code=500,
+            detail=get_error_response(ErrorCode.MODEL_NOT_LOADED)
+        )
+    
+    except ValueError as e:
+        error_msg = str(e)
+        
+        if "IMAGE_CORRUPTED" in error_msg:
+            raise HTTPException(
+                status_code=400,
+                detail=get_error_response(ErrorCode.IMAGE_CORRUPTED)
+            )
+        elif "IMAGE_TOO_SMALL" in error_msg:
+            raise HTTPException(
+                status_code=400,
+                detail=get_error_response(ErrorCode.IMAGE_TOO_SMALL)
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=get_error_response(ErrorCode.EXTRACTION_FAILED)
+            )
+    
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail=get_error_response(ErrorCode.EXTRACTION_FAILED)
+        )
+    
+    # Aucun visage détecté
     if features is None:
         raise HTTPException(
-            status_code=400, detail="Aucun visage détecté sur l'image à vérifier."
+            status_code=400,
+            detail=get_error_response(ErrorCode.NO_FACE_DETECTED)
         )
-
-    # 4. Phase Critique : Vérification du Token
-    # Le nouvel embedding est utilisé pour la vérification, sans être chiffré une deuxième fois
-    # (Argon2 est déterministe par rapport au couple (input+salt) fourni)
     
+    # Vérification du token
     embedding_brut_actuel = features["embedding"]
     
     try:
-        # Appel du SERVICE DE SÉCURITÉ : utilise le nouvel embedding pour recréer l'input 
-        # SHA-256/Secret et le comparer au token_reference stocké.
         is_match = verify_token(embedding_brut_actuel, token_reference)
-        
-    except Exception as e:
-        # Erreur lors de la vérification (souvent due à un token_reference mal formé)
+    
+    except Exception:
         raise HTTPException(
-            status_code=422, detail=f"Erreur de validation du token de référence : {e}"
+            status_code=422,
+            detail=get_error_response(ErrorCode.INVALID_TOKEN_FORMAT)
         )
-
-    # 5. Retour de la réponse
+    
+    # Retourne le résultat
     if is_match:
         return MatchResponse(
             match_found=True,
-            detail="Correspondance d'identité vérifiée."
+            detail="Correspondance d'identité vérifiée avec succès."
         )
     else:
         return MatchResponse(

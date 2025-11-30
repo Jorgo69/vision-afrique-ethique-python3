@@ -1,0 +1,20 @@
+[pytest]
+# Dossier où chercher les tests
+testpaths = tests
+
+# Options par défaut
+addopts = 
+    -v                    # Verbose (affiche les détails)
+    --tb=short           # Traceback court en cas d'erreur
+    --strict-markers     # Erreur si marker inconnu
+    -p no:warnings       # Masquer les warnings (optionnel)
+
+# Markers personnalisés (pour organiser les tests)
+
+markers =
+    slow: Tests lents (ex: tests de performance)
+    integration: Tests d intégration (testent plusieurs composants)
+    unit: Tests unitaires (testent une fonction isolée)
+
+# Configuration asyncio pour FastAPI
+asyncio_mode = auto

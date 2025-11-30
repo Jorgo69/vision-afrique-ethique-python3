@@ -68,7 +68,13 @@ def extract_features_from_image(image_bytes: bytes) -> Optional[dict]:
     
     # ✅ AJOUTEZ CETTE VÉRIFICATION
     if img is None:
-        raise ValueError("Image corrompue ou format non supporté. Vérifiez que le fichier est une image valide (JPEG, PNG).")
+        # raise ValueError("Image corrompue ou format non supporté. Vérifiez que le fichier est une image valide (JPEG, PNG).")
+        raise ValueError("IMAGE_CORRUPTED")
+    
+     # 5. ✅ VALIDATION : Image trop petite
+    height, width = img.shape[:2]
+    if height < 200 or width < 200:
+        raise ValueError("IMAGE_TOO_SMALL")
 
     # 2. Détection, alignement, et extraction des features
     # INSIGHTFACE_MODEL.get() : C'est le cœur du traitement.

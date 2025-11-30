@@ -9,3 +9,7 @@ Installer les dependance dans l'environnment virtuel
 
 Pour InsightFace empecher l'erreur header h compilation code C++
     ` sudo apt install python3.12-dev`
+
+
+#### Pour voir les versions
+`pip list | grep -i "starlette\|fastapi"`
