@@ -2,15 +2,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
-# Import de la configuration et du logger
-from core.config import settings
-from core.logger import setup_logger
-from services.face_extractor import preload_model
+# Import de la fonction pour charger le modèle
+from services.face_extractor import load_insightface_model
 
 # Import du routeur
 from api.endpoints import face
-
-logger = setup_logger(__name__)
 
 # --- GESTION DU LIFECYCLE ---
 
@@ -18,37 +14,16 @@ logger = setup_logger(__name__)
 async def lifespan(app: FastAPI):
     """
     Gère le cycle de vie de l'application.
-    
-    Startup:
-    - Si LAZY_LOAD_MODEL=False: charge le modèle immédiatement (ancien comportement)
-    - Si LAZY_LOAD_MODEL=True: le modèle se chargera au 1er appel API (économise RAM)
-    
-    Shutdown:
-    - Nettoie les ressources
     """
-    # =============== STARTUP ===============
-    logger.info("🚀 Démarrage de l'application FaceAuth API...")
-    logger.info(f"Environnement: {settings.ENVIRONMENT}")
-    logger.info(f"Lazy loading: {settings.LAZY_LOAD_MODEL}")
-    
-    try:
-        # Optionnel: pré-charge le modèle selon la config
-        preload_model()
-        logger.info("✅ Application démarrée avec succès !")
-    
-    except Exception as e:
-        logger.error(f"❌ Erreur au démarrage: {e}")
-        # Ne pas crasher l'app au startup avec lazy loading
-        # Le modèle se chargera à la première requête
-        if not settings.LAZY_LOAD_MODEL:
-            raise
+    # Startup
+    print("🚀 Démarrage : Chargement du modèle InsightFace...")
+    load_insightface_model()
+    print("✅ Modèle chargé avec succès !")
     
     yield  # L'application tourne ici
     
-    # =============== SHUTDOWN ===============
-    logger.info("🛑 Arrêt : Nettoyage des ressources...")
-    # Note: InsightFace n'a pas besoin de cleanup spécial
-    logger.info("✅ Application arrêtée proprement")
+    # Shutdown
+    print("🛑 Arrêt : Nettoyage des ressources...")
 
 
 # --- INITIALISATION DE L'APPLICATION ---
@@ -174,28 +149,25 @@ async def health_check():
     ```json
     {
       "status": "healthy",
-      "model_loaded": false,
-      "lazy_loading": true,
+      "model_loaded": true,
       "version": "1.0.0"
     }
     ```
     
     **Champs :**
-    - `status` : `"healthy"` si tout fonctionne
+    - `status` : `"healthy"` si tout fonctionne, `"unhealthy"` sinon
     - `model_loaded` : `true` si le modèle InsightFace est chargé en mémoire
-    - `lazy_loading` : `true` si lazy loading est activé (modèle se charge au 1er appel)
     - `version` : Version actuelle de l'API
     
     **Codes de statut :**
     - `200` : API opérationnelle
-    - `503` : API en maintenance
+    - `503` : API en maintenance ou modèle non chargé
     """
     from services.face_extractor import INSIGHTFACE_MODEL
     
     return {
         "status": "healthy",
         "model_loaded": INSIGHTFACE_MODEL is not None,
-        "lazy_loading": settings.LAZY_LOAD_MODEL,
         "version": "1.0.0"
     }
 
