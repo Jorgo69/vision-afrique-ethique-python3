@@ -1,0 +1,343 @@
+{
+  "info": {
+    "name": "🌍 FaceAuth API",
+    "description": "Collection complète pour tester l'API de reconnaissance faciale FaceAuth.\n\n**Instructions :**\n1. Importez cette collection dans Postman\n2. Configurez la variable {{base_url}} (par défaut: http://localhost:8000)\n3. Testez les endpoints dans l'ordre\n\n**Documentation :** https://github.com/votre-username/faceauth-api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "🏥 Health Checks",
+      "item": [
+        {
+          "name": "Root - Vérifier que l'API est en ligne",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Endpoint simple pour vérifier que l'API répond.\n\n**Réponse attendue:**\n```json\n{\n  \"message\": \"API Vision Afrique Éthique en ligne.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Health - État détaillé de l'API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Vérifie l'état de santé de l'API et du modèle InsightFace.\n\n**Réponse attendue:**\n```json\n{\n  \"status\": \"healthy\",\n  \"model_loaded\": true,\n  \"version\": \"1.0.0\"\n}\n```"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints pour vérifier le bon fonctionnement de l'API"
+    },
+    {
+      "name": "👤 Face Extraction",
+      "item": [
+        {
+          "name": "Extract - Extraire les features d'un visage",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/chemin/vers/votre/image.jpg",
+                  "description": "Image JPEG, PNG ou WebP contenant un visage (max 10MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/face/extract",
+              "host": ["{{base_url}}"],
+              "path": ["face", "extract"]
+            },
+            "description": "Extrait l'âge, le genre et l'embedding biométrique (512D) d'un visage.\n\n**⚠️ Attention:** L'embedding brut est retourné. Pour la production, utilisez `/face/tokenize`.\n\n**Réponse attendue:**\n```json\n{\n  \"status\": \"success\",\n  \"age\": 24,\n  \"gender\": \"M\",\n  \"embedding\": [-0.088, 1.089, ...]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Extract - Test avec image invalide",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "",
+                  "description": "Ne sélectionnez aucun fichier ou un fichier non-image"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/face/extract",
+              "host": ["{{base_url}}"],
+              "path": ["face", "extract"]
+            },
+            "description": "Test d'erreur : image invalide ou manquante.\n\n**Erreur attendue:**\n```json\n{\n  \"detail\": {\n    \"error\": {\n      \"code\": \"IMAGE_CORRUPTED\",\n      \"message\": \"Image corrompue ou illisible\",\n      \"details\": \"...\"\n    }\n  }\n}\n```"
+          },
+          "response": []
+        }
+      ],
+      "description": "Extraction de features biométriques brutes (âge, genre, embedding)"
+    },
+    {
+      "name": "🔐 Tokenization",
+      "item": [
+        {
+          "name": "Tokenize - Générer un token sécurisé",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Sauvegarder automatiquement le token pour les tests suivants",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set(\"face_token\", response.token);",
+                  "    pm.collectionVariables.set(\"face_age\", response.age);",
+                  "    pm.collectionVariables.set(\"face_gender\", response.gender);",
+                  "    console.log(\"✅ Token sauvegardé:\", response.token.substring(0, 50) + \"...\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/chemin/vers/votre/image.jpg",
+                  "description": "Image du visage à tokeniser"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/face/tokenize",
+              "host": ["{{base_url}}"],
+              "path": ["face", "tokenize"]
+            },
+            "description": "Génère un token Argon2 sécurisé à partir d'un visage.\n\n**✅ Recommandé pour la production** : Le token est irréversible et peut être stocké en BDD.\n\n**Réponse attendue:**\n```json\n{\n  \"status\": \"success\",\n  \"age\": 24,\n  \"gender\": \"M\",\n  \"token\": \"$argon2id$v=19$m=65536,t=2,p=4$...\"\n}\n```\n\n**Note:** Le token est automatiquement sauvegardé dans la variable `{{face_token}}` pour les tests suivants."
+          },
+          "response": []
+        }
+      ],
+      "description": "Génération de tokens cryptographiques sécurisés (Argon2)"
+    },
+    {
+      "name": "✅ Matching",
+      "item": [
+        {
+          "name": "Match - Vérifier correspondance (MÊME IMAGE)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/chemin/vers/votre/image.jpg",
+                  "description": "MÊME image que celle utilisée pour générer le token"
+                },
+                {
+                  "key": "token_reference",
+                  "value": "{{face_token}}",
+                  "type": "text",
+                  "description": "Token généré par /face/tokenize (auto-rempli si vous avez exécuté Tokenize avant)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/face/match",
+              "host": ["{{base_url}}"],
+              "path": ["face", "match"]
+            },
+            "description": "Vérifie si un visage correspond à un token de référence.\n\n**Test:** Utilisez la MÊME image que pour `/face/tokenize`.\n\n**Réponse attendue:**\n```json\n{\n  \"status\": \"success\",\n  \"match_found\": true,\n  \"detail\": \"Correspondance d'identité vérifiée avec succès.\"\n}\n```\n\n**Note:** Le token est automatiquement utilisé depuis la variable `{{face_token}}` si vous avez exécuté Tokenize avant."
+          },
+          "response": []
+        },
+        {
+          "name": "Match - Test sans correspondance (IMAGE DIFFÉRENTE)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/chemin/vers/une/AUTRE/image.jpg",
+                  "description": "Image DIFFÉRENTE de celle utilisée pour le token"
+                },
+                {
+                  "key": "token_reference",
+                  "value": "{{face_token}}",
+                  "type": "text",
+                  "description": "Token de référence"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/face/match",
+              "host": ["{{base_url}}"],
+              "path": ["face", "match"]
+            },
+            "description": "Test de non-correspondance : utiliser une image DIFFÉRENTE.\n\n**Réponse attendue:**\n```json\n{\n  \"status\": \"success\",\n  \"match_found\": false,\n  \"detail\": \"Le visage ne correspond pas au token de référence.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Match - Test avec token invalide",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/chemin/vers/votre/image.jpg"
+                },
+                {
+                  "key": "token_reference",
+                  "value": "invalid_token_format",
+                  "type": "text",
+                  "description": "Token invalide (pour tester la gestion d'erreur)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/face/match",
+              "host": ["{{base_url}}"],
+              "path": ["face", "match"]
+            },
+            "description": "Test d'erreur : token mal formé.\n\n**Erreur attendue:**\n```json\n{\n  \"detail\": {\n    \"error\": {\n      \"code\": \"INVALID_TOKEN_FORMAT\",\n      \"message\": \"Format de token invalide\",\n      \"details\": \"Le token doit être au format Argon2...\"\n    }\n  }\n}\n```"
+          },
+          "response": []
+        }
+      ],
+      "description": "Vérification de correspondance entre visages et tokens"
+    },
+    {
+      "name": "❌ Tests d'Erreurs",
+      "item": [
+        {
+          "name": "Erreur - Image trop grande (>10MB)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "",
+                  "description": "Sélectionnez une image >10MB"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/face/extract",
+              "host": ["{{base_url}}"],
+              "path": ["face", "extract"]
+            },
+            "description": "Test : image dépassant la limite de 10MB.\n\n**Erreur attendue:**\n```json\n{\n  \"detail\": {\n    \"error\": {\n      \"code\": \"IMAGE_TOO_LARGE\",\n      \"message\": \"Image trop volumineuse\",\n      \"details\": \"Taille maximale autorisée : 10 MB...\"\n    }\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Erreur - Aucun visage détecté",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "",
+                  "description": "Image sans visage (paysage, objet, etc.)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/face/extract",
+              "host": ["{{base_url}}"],
+              "path": ["face", "extract"]
+            },
+            "description": "Test : image sans visage détectable.\n\n**Erreur attendue:**\n```json\n{\n  \"detail\": {\n    \"error\": {\n      \"code\": \"NO_FACE_DETECTED\",\n      \"message\": \"Aucun visage détecté dans l'image\",\n      \"details\": \"Assurez-vous que...\"\n    }\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Erreur - Paramètre manquant",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{base_url}}/face/extract",
+              "host": ["{{base_url}}"],
+              "path": ["face", "extract"]
+            },
+            "description": "Test : aucun fichier envoyé.\n\n**Erreur attendue:**\n```json\n{\n  \"detail\": [\n    {\n      \"type\": \"missing\",\n      \"loc\": [\"body\", \"image\"],\n      \"msg\": \"Field required\"\n    }\n  ]\n}\n```\n\n**Code HTTP:** 422"
+          },
+          "response": []
+        }
+      ],
+      "description": "Tests des différents cas d'erreur et codes d'erreur"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "face_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "face_age",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "face_gender",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

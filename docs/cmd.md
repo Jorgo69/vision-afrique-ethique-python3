@@ -4,6 +4,10 @@ Installation venv
     `sudo apt install python3.12-venv`
 Activer l'environnement virtuel
     `source venv/bin/activate`
+
+Desactiver l'environnment virtuel
+`deactivate`
+
 Installer les dependance dans l'environnment virtuel
     `pip install -r requirements.txt`
 

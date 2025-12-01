@@ -1,21 +1,56 @@
-# FastAPI : Le framework Python minimaliste et performant pour créer l'API
+# ============================================
+# CORE API FRAMEWORK
+# ============================================
+# FastAPI : Framework Python minimaliste et performant pour créer l'API REST
 fastapi==0.104.1
-# Uvicorn : Le serveur ASGI qui fait tourner l'application FastAPI
-uvicorn==0.23.2
-# InsightFace : La librairie de reconnaissance faciale qui fournit les modèles ML
-insightface==0.7.3
-# opencv-python : La librairie essentielle pour le traitement d'images (utilisée par InsightFace)
-opencv-python==4.8.1.78
-# python-multipart : Permet à FastAPI de gérer les formulaires de fichiers (upload d'images)
+
+# Uvicorn : Serveur ASGI qui fait tourner l'application FastAPI en production
+uvicorn[standard]==0.24.0
+
+# Python-multipart : Permet à FastAPI de gérer l'upload de fichiers (images)
 python-multipart==0.0.6
-# python-dotenv : Pour charger les variables d'environnement (secrets) depuis le fichier .env
+
+# ============================================
+# RECONNAISSANCE FACIALE (IA)
+# ============================================
+# InsightFace : Librairie de reconnaissance faciale (modèles ML pré-entraînés)
+insightface==0.7.3
+
+# ONNX Runtime : Moteur d'exécution pour les modèles ONNX utilisés par InsightFace
+onnxruntime==1.18.1
+
+# OpenCV : Traitement d'images (lecture, décodage, transformation)
+opencv-python==4.8.1.78
+
+# NumPy : Manipulation des vecteurs et matrices (embeddings = tableaux numpy)
+numpy==1.26.4
+
+# ============================================
+# SÉCURITÉ & CRYPTOGRAPHIE
+# ============================================
+# Argon2 : Algorithme de hachage sécurisé pour les tokens biométriques
+argon2-cffi==23.1.0
+
+# ============================================
+# CONFIGURATION & VALIDATION
+# ============================================
+# Pydantic : Validation des données et schémas (utilisé par FastAPI)
+pydantic==2.5.2
+
+# Pydantic Settings : Gestion des variables d'environnement (.env)
+pydantic-settings==2.1.0
+
+# Python-dotenv : Chargement des secrets depuis le fichier .env
 python-dotenv==1.0.0
-# numpy : Librairie fondamentale pour la manipulation des vecteurs et matrices (embeddings)
-numpy==1.26.1
-# insightface nécessite une autre librairie fondamentale, onnxruntime
-# onnxruntime : Moteur d'exécution (runtime) essentiel pour les modèles ONNX utilisés par InsightFace
-onnxruntime
-# pour le MVC
-pydantic-settings==2.0.3 # (ou la version installée)
-# Installation de la librairie Argon2
-# pip install argon2-cffi
+
+# ============================================
+# TESTS
+# ============================================
+# Pytest : Framework de tests automatisés
+pytest==9.0.1
+
+# Pytest-asyncio : Support des tests asynchrones pour FastAPI
+pytest-asyncio==1.3.0
+
+# HTTPX : Client HTTP moderne pour tester les endpoints FastAPI
+httpx==0.25.1

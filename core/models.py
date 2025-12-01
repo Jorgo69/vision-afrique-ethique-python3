@@ -1,41 +1,125 @@
-# Import de Pydantic pour définir les structures de données
-from pydantic import BaseModel
-from typing import List
+"""
+Schémas Pydantic pour la validation et documentation des données.
+"""
 
+from pydantic import BaseModel, Field
+from typing import List
 
 # --- SCHÉMAS DE RÉPONSE ---
 
-# (FaceExtractionResponse existant)
-# Définit le format standard de la réponse après extraction
 class FaceExtractionResponse(BaseModel):
     """
-    Schéma Pydantic pour la réponse JSON de l'endpoint /extract.
-    Permet à FastAPI de valider et documenter la sortie.
+    Réponse de l'endpoint /face/extract
     """
-    status: str = "success"
-    age: int
-    gender: str
-    # WARNING: L'embedding est la donnée biométrique brute.
-    # On le définit comme une liste de floats.
-    embedding: List[float]
+    status: str = Field(
+        default="success",
+        description="Statut de la requête"
+    )
+    age: int = Field(
+        ...,
+        description="Âge estimé de la personne (en années)",
+        example=24,
+        ge=0,
+        le=120
+    )
+    gender: str = Field(
+        ...,
+        description="Genre estimé : 'M' (Masculin) ou 'F' (Féminin)",
+        example="M",
+        pattern="^[MF]$"
+    )
+    embedding: List[float] = Field(
+        ...,
+        description="Vecteur biométrique de 512 dimensions (représentation numérique unique du visage)",
+        min_length=512,
+        max_length=512
+    )
     
-# Nouveau schéma de réponse pour le token
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "status": "success",
+                "age": 24,
+                "gender": "M",
+                "embedding": [
+                    -0.088, 1.089, 0.140, 0.012, 1.767,
+                    # ... 507 valeurs supplémentaires
+                ]
+            }
+        }
+
+
 class TokenizeResponse(BaseModel):
     """
-    Schéma Pydantic pour la réponse JSON de l'endpoint /tokenize.
-    Ne renvoie que les métadonnées et le token cryptographique irréversible.
+    Réponse de l'endpoint /face/tokenize
     """
-    status: str = "success"
-    age: int
-    gender: str
-    token: str  # Le token haché (chaîne Argon2)
+    status: str = Field(
+        default="success",
+        description="Statut de la requête"
+    )
+    age: int = Field(
+        ...,
+        description="Âge estimé (métadonnée)",
+        example=24
+    )
+    gender: str = Field(
+        ...,
+        description="Genre estimé (métadonnée)",
+        example="M"
+    )
+    token: str = Field(
+        ...,
+        description="Token cryptographique Argon2 (irréversible, sécurisé pour stockage BDD)",
+        example="$argon2id$v=19$m=65536,t=2,p=4$dW5lX2F1dHJl...",
+        min_length=50
+    )
     
-# Schéma de réponse pour l'opération de Match
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "status": "success",
+                "age": 24,
+                "gender": "M",
+                "token": "$argon2id$v=19$m=65536,t=2,p=4$dW5lX2F1dHJlX2NoYWluZQ$+Ag6nAszhHAb9GObNNHmtayySFARMFvOx7vaOOabulY"
+            }
+        }
+
+
 class MatchResponse(BaseModel):
     """
-    Schéma Pydantic pour la réponse JSON de l'endpoint /match.
-    Indique le résultat de la vérification.
+    Réponse de l'endpoint /face/match
     """
-    status: str = "success"
-    match_found: bool  # True si l'embedding correspond au token
-    detail: str        # Message expliquant le résultat
+    status: str = Field(
+        default="success",
+        description="Statut de la requête"
+    )
+    match_found: bool = Field(
+        ...,
+        description="True si le visage correspond au token, False sinon"
+    )
+    detail: str = Field(
+        ...,
+        description="Message explicatif du résultat"
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "examples": [
+                {
+                    "summary": "Correspondance trouvée",
+                    "value": {
+                        "status": "success",
+                        "match_found": True,
+                        "detail": "Correspondance d'identité vérifiée avec succès."
+                    }
+                },
+                {
+                    "summary": "Pas de correspondance",
+                    "value": {
+                        "status": "success",
+                        "match_found": False,
+                        "detail": "Le visage ne correspond pas au token de référence."
+                    }
+                }
+            ]
+        }

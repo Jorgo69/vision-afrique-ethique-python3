@@ -1,9 +1,93 @@
-# Secrets - NE JAMAIS COMMITER LES SECRETS !
+# ============================================
+# SECRETS - NE JAMAIS COMMITER !
+# ============================================
 .env
+.env.local
+.env.production
 
-# Fichiers de cache et temporaires de Python
+# ============================================
+# PYTHON
+# ============================================
+# Bytecode compilé
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
 
-# Dossier de l'environnement virtuel
+# Distribution / Packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environnements virtuels
 venv/
+env/
+ENV/
+.venv
+
+# ============================================
+# TESTS
+# ============================================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ============================================
+# MODÈLES IA (InsightFace)
+# ============================================
+# Les modèles sont téléchargés automatiquement, pas besoin de les versionner
+~/.insightface/
+*.onnx
+*.params
+
+# ============================================
+# DONNÉES & IMAGES DE TEST
+# ============================================
+# Ne pas commiter les images personnelles
+images/*
+!images/.gitkeep
+uploads/
+temp/
+client/images/*
+
+# ============================================
+# IDE & ÉDITEURS
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ============================================
+# OS
+# ============================================
+Thumbs.db
+desktop.ini
+
+# ============================================
+# LOGS
+# ============================================
+*.log
+logs/
+
+# ============================================
+# DOCUMENTATION TEMPORAIRE
+# ============================================
+*.tmp
+*.bak

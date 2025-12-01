@@ -325,3 +325,10 @@ Développeur Full-Stack | Bénin 🇧🇯
 ---
 
 **⭐ Si ce projet vous aide, donnez-lui une étoile !**
+
+
+---
+
+📖 **[Documentation API complète](./docs/api/API.md)** - Tous les détails, codes d'erreur et exemples
+
+---
